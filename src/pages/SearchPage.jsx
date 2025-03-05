@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useSupabase } from '../contexts/SupabaseContext'
 import PropertyCard from '../components/PropertyCard'
-import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline'
+import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon, MapIcon, ListBulletIcon } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 import DatePickerWrapper from '../components/DatePickerWrapper'
 import 'react-datepicker/dist/react-datepicker.css'
 import ru from 'date-fns/locale/ru'
+import MapSearch from '../components/MapSearch'
 
 function SearchPage() {
   const { supabase } = useSupabase()
@@ -14,6 +15,7 @@ function SearchPage() {
   const [properties, setProperties] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [viewMode, setViewMode] = useState('list') // 'list' или 'map'
   
   // Search parameters
   const [location, setLocation] = useState(searchParams.get('location') || '')
@@ -169,6 +171,10 @@ function SearchPage() {
     setSearchParams(params)
   }
 
+  const handlePropertySelect = (property) => {
+    console.log('Выбран объект:', property)
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -178,20 +184,36 @@ function SearchPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-        <h1 className="text-2xl font-bold text-neutral-900 mb-4 md:mb-0">
-          {properties.length} {properties.length === 1 ? 'вариант' : 
-           properties.length >= 2 && properties.length <= 4 ? 'варианта' : 'вариантов'} 
-          {location ? ` в ${location}` : ''}
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-neutral-900">
+          Поиск жилья в Новосибирске
         </h1>
-        <button
-          onClick={() => setFiltersOpen(!filtersOpen)}
-          className="flex items-center text-neutral-700 hover:text-primary"
-        >
-          <AdjustmentsHorizontalIcon className="h-5 w-5 mr-2" />
-          Фильтры
-        </button>
+        
+        <div className="flex space-x-2">
+          <button
+            className={`px-4 py-2 rounded-md flex items-center ${
+              viewMode === 'list'
+                ? 'bg-primary text-white'
+                : 'bg-white text-neutral-700 border border-neutral-300'
+            }`}
+            onClick={() => setViewMode('list')}
+          >
+            <ListBulletIcon className="h-5 w-5 mr-2" />
+            Список
+          </button>
+          <button
+            className={`px-4 py-2 rounded-md flex items-center ${
+              viewMode === 'map'
+                ? 'bg-primary text-white'
+                : 'bg-white text-neutral-700 border border-neutral-300'
+            }`}
+            onClick={() => setViewMode('map')}
+          >
+            <MapIcon className="h-5 w-5 mr-2" />
+            Карта
+          </button>
+        </div>
       </div>
 
       {/* Search filters */}
@@ -345,17 +367,17 @@ function SearchPage() {
       </div>
 
       {/* Property results */}
-      {properties.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {viewMode === 'list' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {properties.map((property) => (
             <PropertyCard key={property.id} property={property} />
           ))}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <h3 className="text-xl font-medium text-neutral-900 mb-2">Ничего не найдено</h3>
-          <p className="text-neutral-600">Попробуйте изменить параметры поиска</p>
-        </div>
+        <MapSearch
+          properties={properties}
+          onPropertySelect={handlePropertySelect}
+        />
       )}
     </div>
   )
