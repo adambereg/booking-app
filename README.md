@@ -1,5 +1,8 @@
 # Booking App
 
+[![CI](https://github.com/adambereg/booking-app/actions/workflows/ci.yml/badge.svg)](https://github.com/adambereg/booking-app/actions/workflows/ci.yml)
+[![GitHub license](https://img.shields.io/github/license/adambereg/booking-app)](https://github.com/adambereg/booking-app/blob/main/LICENSE)
+
 Веб-приложение для бронирования жилья, созданное с использованием React, Vite, Tailwind CSS и Supabase.
 
 ## Функциональность
@@ -15,19 +18,24 @@
 
 ## Технологии
 
-- React
-- Vite
-- Tailwind CSS
+- React 18
+- Vite 5
+- Tailwind CSS 3
 - Supabase
 - Date-fns
-- React Router
+- React Router 6
 - Heroicons
+
+## Требования
+
+- Node.js 18.x или выше
+- npm 9.x или выше
 
 ## Установка
 
 1. Клонируйте репозиторий:
 ```bash
-git clone https://github.com/your-username/booking-app.git
+git clone https://github.com/adambereg/booking-app.git
 ```
 
 2. Установите зависимости:
@@ -59,6 +67,21 @@ src/
   ├── main.jsx      # Точка входа
   └── index.css      # Глобальные стили
 ```
+
+## Скрипты
+
+- `npm run dev` - Запуск сервера разработки
+- `npm run build` - Сборка проекта
+- `npm run preview` - Предварительный просмотр сборки
+- `npm run lint` - Проверка кода линтером
+
+## Вклад в проект
+
+1. Форкните репозиторий
+2. Создайте ветку для вашей функциональности (`git checkout -b feature/amazing-feature`)
+3. Зафиксируйте изменения (`git commit -m 'Add some amazing feature'`)
+4. Отправьте изменения в ваш форк (`git push origin feature/amazing-feature`)
+5. Откройте Pull Request
 
 ## Лицензия
 
