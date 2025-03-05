@@ -1,0 +1,15 @@
+# Глобальные владельцы по умолчанию
+* @adambereg
+
+# Владельцы фронтенд компонентов
+/src/components/ @adambereg
+
+# Владельцы страниц
+/src/pages/ @adambereg
+
+# Владельцы бэкенд функционала
+/supabase/ @adambereg
+
+# Владельцы конфигурации
+*.config.js @adambereg
+/package.json @adambereg 
