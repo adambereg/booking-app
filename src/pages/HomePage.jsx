@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useSupabase } from '../contexts/SupabaseContext'
 import PropertyCard from '../components/PropertyCard'
 import { MagnifyingGlassIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
+import TestSupabase from '../components/TestSupabase'
 
 function HomePage() {
   const { supabase, session } = useSupabase()
@@ -104,6 +105,8 @@ function HomePage() {
 
   return (
     <div>
+      <h1>Главная страница</h1>
+      <TestSupabase />
       {/* Hero Section */}
       <div className="relative">
         <div className="absolute inset-0">

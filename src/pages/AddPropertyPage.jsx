@@ -4,7 +4,7 @@ import { useSupabase } from '../contexts/SupabaseContext'
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
 function AddPropertyPage() {
-  const { supabase, session } = useSupabase()
+  const { supabase } = useSupabase()
   const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
@@ -84,24 +84,17 @@ function AddPropertyPage() {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files)
-    
-    // В реальном приложении вы бы загружали их в Supabase storage
-    // Для демонстрации просто создаем URL объекты
     const newImages = files.map(file => ({
       file,
       url: URL.createObjectURL(file),
       name: file.name
     }))
-    
     setImages([...images, ...newImages])
   }
 
   const handleRemoveImage = (index) => {
     const newImages = [...images]
-    
-    // Отзываем URL объекта, чтобы избежать утечек памяти
     URL.revokeObjectURL(newImages[index].url)
-    
     newImages.splice(index, 1)
     setImages(newImages)
   }
@@ -119,18 +112,82 @@ function AddPropertyPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
-    // В реальном приложении вы бы создавали объект в Supabase
-    // Для демонстрации просто имитируем успешное создание
-    
-    setTimeout(() => {
-      setIsSubmitting(false)
+
+    try {
+      // 1. Создаем запись в таблице properties
+      const { data: property, error: propertyError } = await supabase
+        .from('properties')
+        .insert([{
+          title,
+          description,
+          property_type: propertyType,
+          address,
+          district,
+          city,
+          zip_code: zipCode,
+          price: parseFloat(price),
+          bedrooms: parseInt(bedrooms),
+          beds: parseInt(beds),
+          bathrooms: parseInt(bathrooms),
+          max_guests: parseInt(maxGuests),
+          status: 'draft'
+        }])
+        .select()
+        .single()
+
+      if (propertyError) throw propertyError
+
+      // 2. Загружаем изображения в storage
+      const imagePromises = images.map(async (image, index) => {
+        const fileExt = image.file.name.split('.').pop()
+        const filePath = `${property.id}/${index}.${fileExt}`
+        
+        const { error: uploadError } = await supabase.storage
+          .from('property-images')
+          .upload(filePath, image.file)
+
+        if (uploadError) throw uploadError
+
+        // 3. Создаем запись в таблице property_images
+        const { error: imageError } = await supabase
+          .from('property_images')
+          .insert([{
+            property_id: property.id,
+            storage_path: filePath,
+            position: index
+          }])
+
+        if (imageError) throw imageError
+      })
+
+      await Promise.all(imagePromises)
+
+      // 4. Добавляем удобства
+      if (amenities.length > 0) {
+        const { error: amenitiesError } = await supabase
+          .from('property_amenities')
+          .insert(
+            amenities.map(amenity => ({
+              property_id: property.id,
+              amenity
+            }))
+          )
+
+        if (amenitiesError) throw amenitiesError
+      }
+
+      // Успешно завершено
       navigate('/host/properties')
-    }, 2000)
+    } catch (error) {
+      console.error('Error creating property:', error)
+      // Здесь можно добавить уведомление об ошибке
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
-    <div>
+    <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-neutral-900 mb-6">Добавление нового объекта</h1>
       
       {/* Шаги прогресса */}
@@ -264,32 +321,18 @@ function AddPropertyPage() {
                       </div>
                       
                       <div>
-                        <label htmlFor="city" className="block text-sm font-medium text-neutral-700 mb-1">
-                          Город
+                        <label htmlFor="zip-code" className="block text-sm font-medium text-neutral-700 mb-1">
+                          Почтовый индекс
                         </label>
                         <input
                           type="text"
-                          id="city"
+                          id="zip-code"
                           className="input-field"
-                          value={city}
-                          onChange={(e) => setCity(e.target.value)}
-                          required
+                          value={zipCode}
+                          onChange={(e) => setZipCode(e.target.value)}
+                          placeholder="630000"
                         />
                       </div>
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="zip-code" className="block text-sm font-medium text-neutral-700 mb-1">
-                        Почтовый индекс
-                      </label>
-                      <input
-                        type="text"
-                        id="zip-code"
-                        className="input-field"
-                        value={zipCode}
-                        onChange={(e) => setZipCode(e.target.value)}
-                        required
-                      />
                     </div>
                   </div>
                 </div>
@@ -298,16 +341,16 @@ function AddPropertyPage() {
               <div className="mt-8 flex justify-end">
                 <button
                   type="button"
-                  className="btn-primary"
                   onClick={handleNextStep}
+                  className="btn-primary"
                 >
-                  Далее: Детали объекта
+                  Далее
                 </button>
               </div>
             </div>
           )}
           
-          {/* Шаг 2: Детали объекта */}
+          {/* Шаг 2: Детали */}
           {currentStep === 2 && (
             <div>
               <h2 className="text-lg font-bold text-neutral-900 mb-4">Детали объекта</h2>
@@ -315,29 +358,25 @@ function AddPropertyPage() {
               <div className="space-y-6">
                 <div>
                   <label htmlFor="price" className="block text-sm font-medium text-neutral-700 mb-1">
-                    Цена за сутки (₽) *
+                    Цена за ночь (₽) *
                   </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-neutral-500">₽</span>
-                    </div>
-                    <input
-                      type="number"
-                      id="price"
-                      className="input-field pl-7"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      required
-                      min="1"
-                      step="1"
-                    />
-                  </div>
+                  <input
+                    type="number"
+                    id="price"
+                    className="input-field"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    required
+                    min="0"
+                    step="100"
+                    placeholder="2000"
+                  />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="bedrooms" className="block text-sm font-medium text-neutral-700 mb-1">
-                      Спальни *
+                      Количество спален *
                     </label>
                     <input
                       type="number"
@@ -347,13 +386,13 @@ function AddPropertyPage() {
                       onChange={(e) => setBedrooms(e.target.value)}
                       required
                       min="0"
-                      step="1"
+                      placeholder="2"
                     />
                   </div>
                   
                   <div>
                     <label htmlFor="beds" className="block text-sm font-medium text-neutral-700 mb-1">
-                      Кровати *
+                      Количество кроватей *
                     </label>
                     <input
                       type="number"
@@ -363,7 +402,7 @@ function AddPropertyPage() {
                       onChange={(e) => setBeds(e.target.value)}
                       required
                       min="1"
-                      step="1"
+                      placeholder="3"
                     />
                   </div>
                 </div>
@@ -371,7 +410,7 @@ function AddPropertyPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="bathrooms" className="block text-sm font-medium text-neutral-700 mb-1">
-                      Ванные комнаты *
+                      Количество ванных *
                     </label>
                     <input
                       type="number"
@@ -380,14 +419,14 @@ function AddPropertyPage() {
                       value={bathrooms}
                       onChange={(e) => setBathrooms(e.target.value)}
                       required
-                      min="0.5"
-                      step="0.5"
+                      min="0"
+                      placeholder="1"
                     />
                   </div>
                   
                   <div>
                     <label htmlFor="max-guests" className="block text-sm font-medium text-neutral-700 mb-1">
-                      Макс. гостей *
+                      Максимум гостей *
                     </label>
                     <input
                       type="number"
@@ -397,7 +436,7 @@ function AddPropertyPage() {
                       onChange={(e) => setMaxGuests(e.target.value)}
                       required
                       min="1"
-                      step="1"
+                      placeholder="4"
                     />
                   </div>
                 </div>
@@ -406,20 +445,32 @@ function AddPropertyPage() {
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Удобства
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {availableAmenities.map((amenity) => (
-                      <div key={amenity} className="flex items-center">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {availableAmenities.map(amenity => (
+                      <label
+                        key={amenity}
+                        className={`
+                          flex items-center p-3 rounded-lg border cursor-pointer
+                          ${amenities.includes(amenity)
+                            ? 'border-primary bg-primary/5'
+                            : 'border-neutral-200 hover:border-neutral-300'
+                          }
+                        `}
+                      >
                         <input
-                          id={`amenity-${amenity}`}
                           type="checkbox"
-                          className="h-4 w-4 text-primary focus:ring-primary border-neutral-300 rounded"
+                          className="sr-only"
                           checked={amenities.includes(amenity)}
                           onChange={() => handleAmenityToggle(amenity)}
                         />
-                        <label htmlFor={`amenity-${amenity}`} className="ml-2 text-sm text-neutral-700">
+                        <span className={`text-sm ${
+                          amenities.includes(amenity)
+                            ? 'text-primary'
+                            : 'text-neutral-700'
+                        }`}>
                           {amenity}
-                        </label>
-                      </div>
+                        </span>
+                      </label>
                     ))}
                   </div>
                 </div>
@@ -428,17 +479,17 @@ function AddPropertyPage() {
               <div className="mt-8 flex justify-between">
                 <button
                   type="button"
-                  className="btn-secondary"
                   onClick={handlePrevStep}
+                  className="btn-secondary"
                 >
                   Назад
                 </button>
                 <button
                   type="button"
-                  className="btn-primary"
                   onClick={handleNextStep}
+                  className="btn-primary"
                 >
-                  Далее: Добавить фотографии
+                  Далее
                 </button>
               </div>
             </div>
@@ -447,80 +498,79 @@ function AddPropertyPage() {
           {/* Шаг 3: Фотографии */}
           {currentStep === 3 && (
             <div>
-              <h2 className="text-lg font-bold text-neutral-900 mb-4">Фотографии объекта</h2>
+              <h2 className="text-lg font-bold text-neutral-900 mb-4">Фотографии</h2>
               
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Загрузите фотографии *
+                    Загрузите фотографии вашего объекта
                   </label>
-                  <p className="text-sm text-neutral-500 mb-4">
-                    Добавьте не менее 5 фотографий вашего объекта. Качественные изображения увеличивают количество бронирований!
-                  </p>
-                  
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
+                  <div className="mt-2">
+                    <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-neutral-300 border-dashed rounded-lg">
+                      <div className="space-y-1 text-center">
+                        <PlusIcon className="mx-auto h-12 w-12 text-neutral-400" />
+                        <div className="flex text-sm text-neutral-600">
+                          <label
+                            htmlFor="images"
+                            className="relative cursor-pointer rounded-md font-medium text-primary hover:text-primary-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary"
+                          >
+                            <span>Загрузить файлы</span>
+                            <input
+                              id="images"
+                              name="images"
+                              type="file"
+                              className="sr-only"
+                              multiple
+                              accept="image/*"
+                              onChange={handleImageUpload}
+                            />
+                          </label>
+                          <p className="pl-1">или перетащите их сюда</p>
+                        </div>
+                        <p className="text-xs text-neutral-500">
+                          PNG, JPG, GIF до 10MB
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {images.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {images.map((image, index) => (
-                      <div key={index} className="relative">
+                      <div key={index} className="relative group">
                         <img
                           src={image.url}
-                          alt={`Объект ${index + 1}`}
-                          className="h-32 w-full object-cover rounded-lg"
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-40 object-cover rounded-lg"
                         />
                         <button
                           type="button"
-                          className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-md hover:bg-neutral-100"
                           onClick={() => handleRemoveImage(index)}
+                          className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <XMarkIcon className="h-4 w-4 text-neutral-700" />
+                          <XMarkIcon className="h-4 w-4 text-neutral-500" />
                         </button>
                       </div>
                     ))}
-                    
-                    <label className="h-32 border-2 border-dashed border-neutral-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-neutral-50">
-                      <PlusIcon className="h-8 w-8 text-neutral-400" />
-                      <span className="mt-2 text-sm text-neutral-500">Добавить фото</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                      />
-                    </label>
                   </div>
-                  
-                  {images.length === 0 && (
-                    <p className="text-sm text-red-600">
-                      Пожалуйста, добавьте хотя бы одну фотографию вашего объекта.
-                    </p>
-                  )}
-                </div>
+                )}
               </div>
               
               <div className="mt-8 flex justify-between">
                 <button
                   type="button"
-                  className="btn-secondary"
                   onClick={handlePrevStep}
+                  className="btn-secondary"
                 >
                   Назад
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary"
                   disabled={isSubmitting || images.length === 0}
+                  className="btn-primary"
                 >
-                  {isSubmitting ? (
-                    <span className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Создание объекта...
-                    </span>
-                  ) : (
-                    'Создать объект'
-                  )}
+                  {isSubmitting ? 'Сохранение...' : 'Сохранить объект'}
                 </button>
               </div>
             </div>

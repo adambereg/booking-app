@@ -1,25 +1,24 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useSupabase } from '../contexts/SupabaseContext'
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
 function EditPropertyPage() {
-  const { id } = useParams()
-  const { supabase, session } = useSupabase()
+  const { supabase } = useSupabase()
   const navigate = useNavigate()
+  const { id } = useParams()
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
   
-  // Property details
+  // Детали объекта
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [propertyType, setPropertyType] = useState('')
   const [address, setAddress] = useState('')
-  const [city, setCity] = useState('')
-  const [state, setState] = useState('')
+  const [district, setDistrict] = useState('')
+  const [city, setCity] = useState('Новосибирск')
   const [zipCode, setZipCode] = useState('')
-  const [country, setCountry] = useState('')
   const [price, setPrice] = useState('')
   const [bedrooms, setBedrooms] = useState('')
   const [beds, setBeds] = useState('')
@@ -27,126 +26,106 @@ function EditPropertyPage() {
   const [maxGuests, setMaxGuests] = useState('')
   const [amenities, setAmenities] = useState([])
   const [images, setImages] = useState([])
-  const [isActive, setIsActive] = useState(true)
+  const [existingImages, setExistingImages] = useState([])
+  const [imagesToDelete, setImagesToDelete] = useState([])
   
-  // Property types
+  // Типы жилья
   const propertyTypes = [
-    { id: 'house', name: 'House' },
-    { id: 'apartment', name: 'Apartment' },
-    { id: 'villa', name: 'Villa' },
-    { id: 'cabin', name: 'Cabin' },
-    { id: 'condo', name: 'Condo' },
-    { id: 'loft', name: 'Loft' },
-    { id: 'townhouse', name: 'Townhouse' },
-    { id: 'other', name: 'Other' }
+    { id: 'apartment', name: 'Квартира' },
+    { id: 'studio', name: 'Студия' },
+    { id: 'room', name: 'Комната' },
+    { id: 'house', name: 'Дом' },
+    { id: 'cottage', name: 'Коттедж' }
   ]
   
-  // Available amenities
+  // Районы Новосибирска
+  const districts = [
+    { id: 'central', name: 'Центральный' },
+    { id: 'soviet', name: 'Советский' },
+    { id: 'october', name: 'Октябрьский' },
+    { id: 'lenin', name: 'Ленинский' },
+    { id: 'kirov', name: 'Кировский' },
+    { id: 'pervomaysky', name: 'Первомайский' },
+    { id: 'zaeltsovsky', name: 'Заельцовский' },
+    { id: 'kalinin', name: 'Калининский' },
+    { id: 'dzerzhinsky', name: 'Дзержинский' },
+    { id: 'zheleznodorozhny', name: 'Железнодорожный' }
+  ]
+  
+  // Доступные удобства
   const availableAmenities = [
-    'Wifi',
-    'Kitchen',
-    'Free parking',
-    'Pool',
-    'Hot tub',
-    'Air conditioning',
-    'Heating',
-    'Washer',
-    'Dryer',
-    'TV',
-    'Cable TV',
-    'Fireplace',
-    'Gym',
-    'Elevator',
-    'Wheelchair accessible',
-    'Breakfast',
-    'Pets allowed',
-    'Smoking allowed',
-    'Beach access',
-    'Ocean view',
-    'Mountain view',
-    'BBQ grill',
-    'Balcony',
-    'Garden',
-    'Patio'
+    'Wi-Fi',
+    'Кухня',
+    'Бесплатная парковка',
+    'Кондиционер',
+    'Отопление',
+    'Стиральная машина',
+    'Сушильная машина',
+    'Телевизор',
+    'Фен',
+    'Утюг',
+    'Рабочая зона',
+    'Лифт',
+    'Доступно для инвалидов',
+    'Завтрак',
+    'Можно с питомцами',
+    'Можно курить',
+    'Балкон',
+    'Микроволновая печь',
+    'Холодильник',
+    'Посудомоечная машина',
+    'Кофемашина',
+    'Детская кроватка'
   ]
 
   useEffect(() => {
-    // In a real app, you would fetch the property data from Supabase
-    // For now, we'll use mock data
-    const mockProperty = {
-      id: 1,
-      title: 'Luxury Beach Villa with Ocean Views',
-      description: 'Experience the ultimate beachfront luxury in this stunning villa overlooking the Pacific Ocean. This spacious property features floor-to-ceiling windows, a private infinity pool, and direct beach access. Perfect for family vacations or a romantic getaway.',
-      propertyType: 'villa',
-      address: '123 Ocean Drive',
-      city: 'Malibu',
-      state: 'California',
-      zipCode: '90265',
-      country: 'United States',
-      price: 350,
-      bedrooms: 4,
-      beds: 5,
-      bathrooms: 3,
-      maxGuests: 10,
-      amenities: [
-        'Wifi',
-        'Kitchen',
-        'Free parking',
-        'Pool',
-        'Hot tub',
-        'Air conditioning',
-        'Washer',
-        'Dryer',
-        'TV',
-        'Beach access',
-        'Ocean view',
-        'BBQ grill'
-      ],
-      images: [
-        {
-          url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-          name: 'villa-exterior.jpg'
-        },
-        {
-          url: 'https://images.unsplash.com/photo-1615571022219-eb45cf7faa9d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-          name: 'villa-living-room.jpg'
-        },
-        {
-          url: 'https://images.unsplash.com/photo-1594540637720-9b14714212bc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-          name: 'villa-bedroom.jpg'
-        },
-        {
-          url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-          name: 'villa-bathroom.jpg'
-        },
-        {
-          url: 'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-          name: 'villa-pool.jpg'
-        }
-      ],
-      isActive: true
-    }
-
-    // Set the form values
-    setTitle(mockProperty.title)
-    setDescription(mockProperty.description)
-    setPropertyType(mockProperty.propertyType)
-    setAddress(mockProperty.address)
-    setCity(mockProperty.city)
-    setState(mockProperty.state)
-    setZipCode(mockProperty.zipCode)
-    setCountry(mockProperty.country)
-    setPrice(mockProperty.price.toString())
-    setBedrooms(mockProperty.bedrooms.toString())
-    setBeds(mockProperty.beds.toString())
-    setBathrooms(mockProperty.bathrooms.toString())
-    setMaxGuests(mockProperty.maxGuests.toString())
-    setAmenities(mockProperty.amenities)
-    setImages(mockProperty.images)
-    setIsActive(mockProperty.isActive)
-    
-    setIsLoading(false)
+    fetchProperty()
   }, [id])
+
+  const fetchProperty = async () => {
+    try {
+      setIsLoading(true)
+      
+      const { data: property, error: propertyError } = await supabase
+        .from('properties')
+        .select(`
+          *,
+          property_images (
+            id,
+            storage_path
+          ),
+          property_amenities (
+            amenity
+          )
+        `)
+        .eq('id', id)
+        .single()
+
+      if (propertyError) throw propertyError
+
+      // Заполняем форму данными
+      setTitle(property.title)
+      setDescription(property.description)
+      setPropertyType(property.property_type)
+      setAddress(property.address)
+      setDistrict(property.district)
+      setCity(property.city)
+      setZipCode(property.zip_code)
+      setPrice(property.price.toString())
+      setBedrooms(property.bedrooms.toString())
+      setBeds(property.beds.toString())
+      setBathrooms(property.bathrooms.toString())
+      setMaxGuests(property.max_guests.toString())
+      setAmenities(property.property_amenities.map(a => a.amenity))
+      setExistingImages(property.property_images)
+    } catch (error) {
+      console.error('Error fetching property:', error)
+      // Здесь можно добавить уведомление об ошибке
+      navigate('/host/properties')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleAmenityToggle = (amenity) => {
     if (amenities.includes(amenity)) {
@@ -158,28 +137,24 @@ function EditPropertyPage() {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files)
-    
-    // In a real app, you would upload these to Supabase storage
-    // For now, we'll just create object URLs
     const newImages = files.map(file => ({
       file,
       url: URL.createObjectURL(file),
       name: file.name
     }))
-    
     setImages([...images, ...newImages])
   }
 
   const handleRemoveImage = (index) => {
     const newImages = [...images]
-    
-    // Revoke the object URL to avoid memory leaks
-    if (newImages[index].file) {
-      URL.revokeObjectURL(newImages[index].url)
-    }
-    
+    URL.revokeObjectURL(newImages[index].url)
     newImages.splice(index, 1)
     setImages(newImages)
+  }
+
+  const handleRemoveExistingImage = (image) => {
+    setExistingImages(existingImages.filter(img => img.id !== image.id))
+    setImagesToDelete([...imagesToDelete, image])
   }
 
   const handleNextStep = () => {
@@ -195,29 +170,114 @@ function EditPropertyPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
-    // In a real app, you would update the property in Supabase
-    // For now, we'll simulate a successful update
-    
-    setTimeout(() => {
-      setIsSubmitting(false)
+
+    try {
+      // 1. Обновляем основные данные объекта
+      const { error: propertyError } = await supabase
+        .from('properties')
+        .update({
+          title,
+          description,
+          property_type: propertyType,
+          address,
+          district,
+          city,
+          zip_code: zipCode,
+          price: parseFloat(price),
+          bedrooms: parseInt(bedrooms),
+          beds: parseInt(beds),
+          bathrooms: parseInt(bathrooms),
+          max_guests: parseInt(maxGuests)
+        })
+        .eq('id', id)
+
+      if (propertyError) throw propertyError
+
+      // 2. Удаляем отмеченные изображения
+      for (const image of imagesToDelete) {
+        // Удаляем из storage
+        await supabase.storage
+          .from('property-images')
+          .remove([image.storage_path])
+
+        // Удаляем из базы данных
+        await supabase
+          .from('property_images')
+          .delete()
+          .eq('id', image.id)
+      }
+
+      // 3. Загружаем новые изображения
+      const imagePromises = images.map(async (image, index) => {
+        const fileExt = image.file.name.split('.').pop()
+        const filePath = `${id}/${Date.now()}-${index}.${fileExt}`
+        
+        const { error: uploadError } = await supabase.storage
+          .from('property-images')
+          .upload(filePath, image.file)
+
+        if (uploadError) throw uploadError
+
+        const { error: imageError } = await supabase
+          .from('property_images')
+          .insert([{
+            property_id: id,
+            storage_path: filePath,
+            position: existingImages.length + index
+          }])
+
+        if (imageError) throw imageError
+      })
+
+      await Promise.all(imagePromises)
+
+      // 4. Обновляем удобства
+      // Сначала удаляем все существующие
+      await supabase
+        .from('property_amenities')
+        .delete()
+        .eq('property_id', id)
+
+      // Затем добавляем новые
+      if (amenities.length > 0) {
+        const { error: amenitiesError } = await supabase
+          .from('property_amenities')
+          .insert(
+            amenities.map(amenity => ({
+              property_id: id,
+              amenity
+            }))
+          )
+
+        if (amenitiesError) throw amenitiesError
+      }
+
+      // Успешно завершено
       navigate('/host/properties')
-    }, 2000)
+    } catch (error) {
+      console.error('Error updating property:', error)
+      // Здесь можно добавить уведомление об ошибке
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <div className="spinner"></div>
+          <p className="mt-2 text-neutral-600">Загрузка объекта...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-neutral-900 mb-6">Edit Property</h1>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold text-neutral-900 mb-6">Редактирование объекта</h1>
       
-      {/* Progress steps */}
+      {/* Шаги прогресса */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div className={`flex items-center ${currentStep >= 1 ? 'text-primary' : 'text-neutral-400'}`}>
@@ -226,7 +286,7 @@ function EditPropertyPage() {
             }`}>
               1
             </div>
-            <span className="ml-2 text-sm font-medium">Basic Info</span>
+            <span className="ml-2 text-sm font-medium">Основная информация</span>
           </div>
           <div className={`flex-1 h-0.5 mx-4 ${currentStep >= 2 ? 'bg-primary' : 'bg-neutral-200'}`}></div>
           <div className={`flex items-center ${currentStep >= 2 ? 'text-primary' : 'text-neutral-400'}`}>
@@ -235,7 +295,7 @@ function EditPropertyPage() {
             }`}>
               2
             </div>
-            <span className="ml-2 text-sm font-medium">Details</span>
+            <span className="ml-2 text-sm font-medium">Детали</span>
           </div>
           <div className={`flex-1 h-0.5 mx-4 ${currentStep >= 3 ? 'bg-primary' : 'bg-neutral-200'}`}></div>
           <div className={`flex items-center ${currentStep >= 3 ? 'text-primary' : 'text-neutral-400'}`}>
@@ -244,22 +304,22 @@ function EditPropertyPage() {
             }`}>
               3
             </div>
-            <span className="ml-2 text-sm font-medium">Photos</span>
+            <span className="ml-2 text-sm font-medium">Фотографии</span>
           </div>
         </div>
       </div>
       
       <div className="card p-6">
         <form onSubmit={handleSubmit}>
-          {/* Step 1: Basic Info */}
+          {/* Шаг 1: Основная информация */}
           {currentStep === 1 && (
             <div>
-              <h2 className="text-lg font-bold text-neutral-900 mb-4">Basic Information</h2>
+              <h2 className="text-lg font-bold text-neutral-900 mb-4">Основная информация</h2>
               
               <div className="space-y-6">
                 <div>
                   <label htmlFor="title" className="block text-sm font-medium text-neutral-700 mb-1">
-                    Property Title *
+                    Название объекта *
                   </label>
                   <input
                     type="text"
@@ -268,13 +328,13 @@ function EditPropertyPage() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     required
-                    placeholder="e.g. Cozy Apartment in Downtown"
+                    placeholder="например, Уютная квартира в центре"
                   />
                 </div>
                 
                 <div>
                   <label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-1">
-                    Description *
+                    Описание *
                   </label>
                   <textarea
                     id="description"
@@ -283,13 +343,13 @@ function EditPropertyPage() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     required
-                    placeholder="Describe your property, highlight special features, and what makes it unique"
+                    placeholder="Опишите ваш объект, выделите особенности и что делает его уникальным"
                   />
                 </div>
                 
                 <div>
                   <label htmlFor="property-type" className="block text-sm font-medium text-neutral-700 mb-1">
-                    Property Type *
+                    Тип жилья *
                   </label>
                   <select
                     id="property-type"
@@ -298,7 +358,7 @@ function EditPropertyPage() {
                     onChange={(e) => setPropertyType(e.target.value)}
                     required
                   >
-                    <option value="">Select property type</option>
+                    <option value="">Выберите тип жилья</option>
                     {propertyTypes.map(type => (
                       <option key={type.id} value={type.id}>
                         {type.name}
@@ -308,12 +368,12 @@ function EditPropertyPage() {
                 </div>
                 
                 <div>
-                  <h3 className="text-sm font-medium text-neutral-700 mb-2">Location *</h3>
+                  <h3 className="text-sm font-medium text-neutral-700 mb-2">Местоположение *</h3>
                   
                   <div className="grid grid-cols-1 gap-4">
                     <div>
                       <label htmlFor="address" className="block text-sm font-medium text-neutral-700 mb-1">
-                        Street Address
+                        Адрес
                       </label>
                       <input
                         type="text"
@@ -322,43 +382,34 @@ function EditPropertyPage() {
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
                         required
+                        placeholder="Улица, дом, квартира"
                       />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label htmlFor="city" className="block text-sm font-medium text-neutral-700 mb-1">
-                          City
+                        <label htmlFor="district" className="block text-sm font-medium text-neutral-700 mb-1">
+                          Район
                         </label>
-                        <input
-                          type="text"
-                          id="city"
+                        <select
+                          id="district"
                           className="input-field"
-                          value={city}
-                          onChange={(e) => setCity(e.target.value)}
+                          value={district}
+                          onChange={(e) => setDistrict(e.target.value)}
                           required
-                        />
+                        >
+                          <option value="">Выберите район</option>
+                          {districts.map(d => (
+                            <option key={d.id} value={d.id}>
+                              {d.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       
                       <div>
-                        <label htmlFor="state" className="block text-sm font-medium text-neutral-700 mb-1">
-                          State / Province
-                        </label>
-                        <input
-                          type="text"
-                          id="state"
-                          className="input-field"
-                          value={state}
-                          onChange={(e) => setState(e.target.value)}
-                          required
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
                         <label htmlFor="zip-code" className="block text-sm font-medium text-neutral-700 mb-1">
-                          ZIP / Postal Code
+                          Почтовый индекс
                         </label>
                         <input
                           type="text"
@@ -366,39 +417,10 @@ function EditPropertyPage() {
                           className="input-field"
                           value={zipCode}
                           onChange={(e) => setZipCode(e.target.value)}
-                          required
-                        />
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="country" className="block text-sm font-medium text-neutral-700 mb-1">
-                          Country
-                        </label>
-                        <input
-                          type="text"
-                          id="country"
-                          className="input-field"
-                          value={country}
-                          onChange={(e) => setCountry(e.target.value)}
-                          required
+                          placeholder="630000"
                         />
                       </div>
                     </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="flex items-center">
-                    <input
-                      id="is-active"
-                      type="checkbox"
-                      className="h-4 w-4 text-primary focus:ring-primary border-neutral-300 rounded"
-                      checked={isActive}
-                      onChange={(e) => setIsActive(e.target.checked)}
-                    />
-                    <label htmlFor="is-active" className="ml-2 block text-sm text-neutral-700">
-                      Property is active and available for booking
-                    </label>
                   </div>
                 </div>
               </div>
@@ -406,46 +428,42 @@ function EditPropertyPage() {
               <div className="mt-8 flex justify-end">
                 <button
                   type="button"
-                  className="btn-primary"
                   onClick={handleNextStep}
+                  className="btn-primary"
                 >
-                  Next: Property Details
+                  Далее
                 </button>
               </div>
             </div>
           )}
-          
-          {/* Step 2: Property Details */}
+
+          {/* Шаг 2: Детали */}
           {currentStep === 2 && (
             <div>
-              <h2 className="text-lg font-bold text-neutral-900 mb-4">Property Details</h2>
+              <h2 className="text-lg font-bold text-neutral-900 mb-4">Детали объекта</h2>
               
               <div className="space-y-6">
                 <div>
                   <label htmlFor="price" className="block text-sm font-medium text-neutral-700 mb-1">
-                    Price per night (USD) *
+                    Цена за ночь (₽) *
                   </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-neutral-500">$</span>
-                    </div>
-                    <input
-                      type="number"
-                      id="price"
-                      className="input-field pl-7"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      required
-                      min="1"
-                      step="1"
-                    />
-                  </div>
+                  <input
+                    type="number"
+                    id="price"
+                    className="input-field"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    required
+                    min="0"
+                    step="100"
+                    placeholder="2000"
+                  />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="bedrooms" className="block text-sm font-medium text-neutral-700 mb-1">
-                      Bedrooms *
+                      Количество спален *
                     </label>
                     <input
                       type="number"
@@ -455,13 +473,13 @@ function EditPropertyPage() {
                       onChange={(e) => setBedrooms(e.target.value)}
                       required
                       min="0"
-                      step="1"
+                      placeholder="2"
                     />
                   </div>
                   
                   <div>
                     <label htmlFor="beds" className="block text-sm font-medium text-neutral-700 mb-1">
-                      Beds *
+                      Количество кроватей *
                     </label>
                     <input
                       type="number"
@@ -471,7 +489,7 @@ function EditPropertyPage() {
                       onChange={(e) => setBeds(e.target.value)}
                       required
                       min="1"
-                      step="1"
+                      placeholder="3"
                     />
                   </div>
                 </div>
@@ -479,7 +497,7 @@ function EditPropertyPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="bathrooms" className="block text-sm font-medium text-neutral-700 mb-1">
-                      Bathrooms *
+                      Количество ванных *
                     </label>
                     <input
                       type="number"
@@ -488,14 +506,14 @@ function EditPropertyPage() {
                       value={bathrooms}
                       onChange={(e) => setBathrooms(e.target.value)}
                       required
-                      min="0.5"
-                      step="0.5"
+                      min="0"
+                      placeholder="1"
                     />
                   </div>
                   
                   <div>
                     <label htmlFor="max-guests" className="block text-sm font-medium text-neutral-700 mb-1">
-                      Max Guests *
+                      Максимум гостей *
                     </label>
                     <input
                       type="number"
@@ -505,29 +523,41 @@ function EditPropertyPage() {
                       onChange={(e) => setMaxGuests(e.target.value)}
                       required
                       min="1"
-                      step="1"
+                      placeholder="4"
                     />
                   </div>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Amenities
+                    Удобства
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {availableAmenities.map((amenity) => (
-                      <div key={amenity} className="flex items-center">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {availableAmenities.map(amenity => (
+                      <label
+                        key={amenity}
+                        className={`
+                          flex items-center p-3 rounded-lg border cursor-pointer
+                          ${amenities.includes(amenity)
+                            ? 'border-primary bg-primary/5'
+                            : 'border-neutral-200 hover:border-neutral-300'
+                          }
+                        `}
+                      >
                         <input
-                          id={`amenity-${amenity}`}
                           type="checkbox"
-                          className="h-4 w-4 text-primary focus:ring-primary border-neutral-300 rounded"
+                          className="sr-only"
                           checked={amenities.includes(amenity)}
                           onChange={() => handleAmenityToggle(amenity)}
                         />
-                        <label htmlFor={`amenity-${amenity}`} className="ml-2 text-sm text-neutral-700">
+                        <span className={`text-sm ${
+                          amenities.includes(amenity)
+                            ? 'text-primary'
+                            : 'text-neutral-700'
+                        }`}>
                           {amenity}
-                        </label>
-                      </div>
+                        </span>
+                      </label>
                     ))}
                   </div>
                 </div>
@@ -536,99 +566,132 @@ function EditPropertyPage() {
               <div className="mt-8 flex justify-between">
                 <button
                   type="button"
-                  className="btn-secondary"
                   onClick={handlePrevStep}
+                  className="btn-secondary"
                 >
-                  Back
+                  Назад
                 </button>
                 <button
                   type="button"
-                  className="btn-primary"
                   onClick={handleNextStep}
+                  className="btn-primary"
                 >
-                  Next: Photos
+                  Далее
                 </button>
               </div>
             </div>
           )}
-          
-          {/* Step 3: Photos */}
+
+          {/* Шаг 3: Фотографии */}
           {currentStep === 3 && (
             <div>
-              <h2 className="text-lg font-bold text-neutral-900 mb-4">Property Photos</h2>
+              <h2 className="text-lg font-bold text-neutral-900 mb-4">Фотографии</h2>
               
               <div className="space-y-6">
+                {/* Существующие изображения */}
+                {existingImages.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Текущие фотографии
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {existingImages.map((image) => (
+                        <div key={image.id} className="relative group">
+                          <img
+                            src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/property-images/${image.storage_path}`}
+                            alt="Property"
+                            className="w-full h-40 object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveExistingImage(image)}
+                            className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <XMarkIcon className="h-4 w-4 text-neutral-500" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Загрузка новых изображений */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Property Photos *
+                    Добавить новые фотографии
                   </label>
-                  <p className="text-sm text-neutral-500 mb-4">
-                    Add at least 5 photos of your property. High-quality images increase bookings!
-                  </p>
-                  
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
-                    {images.map((image, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={image.url}
-                          alt={`Property ${index + 1}`}
-                          className="h-32 w-full object-cover rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-md hover:bg-neutral-100"
-                          onClick={() => handleRemoveImage(index)}
-                        >
-                          <XMarkIcon className="h-4 w-4 text-neutral-700" />
-                        </button>
+                  <div className="mt-2">
+                    <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-neutral-300 border-dashed rounded-lg">
+                      <div className="space-y-1 text-center">
+                        <PlusIcon className="mx-auto h-12 w-12 text-neutral-400" />
+                        <div className="flex text-sm text-neutral-600">
+                          <label
+                            htmlFor="images"
+                            className="relative cursor-pointer rounded-md font-medium text-primary hover:text-primary-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary"
+                          >
+                            <span>Загрузить файлы</span>
+                            <input
+                              id="images"
+                              name="images"
+                              type="file"
+                              className="sr-only"
+                              multiple
+                              accept="image/*"
+                              onChange={handleImageUpload}
+                            />
+                          </label>
+                          <p className="pl-1">или перетащите их сюда</p>
+                        </div>
+                        <p className="text-xs text-neutral-500">
+                          PNG, JPG, GIF до 10MB
+                        </p>
                       </div>
-                    ))}
-                    
-                    <label className="h-32 border-2 border-dashed border-neutral-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-neutral-50">
-                      <PlusIcon className="h-8 w-8 text-neutral-400" />
-                      <span className="mt-2 text-sm text-neutral-500">Add photo</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                      />
-                    </label>
+                    </div>
                   </div>
-                  
-                  {images.length === 0 && (
-                    <p className="text-sm text-red-600">
-                      Please add at least one photo of your property.
-                    </p>
-                  )}
                 </div>
+                
+                {/* Предпросмотр новых изображений */}
+                {images.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Новые фотографии
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {images.map((image, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={image.url}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-40 object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(index)}
+                            className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <XMarkIcon className="h-4 w-4 text-neutral-500" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               
               <div className="mt-8 flex justify-between">
                 <button
                   type="button"
-                  className="btn-secondary"
                   onClick={handlePrevStep}
+                  className="btn-secondary"
                 >
-                  Back
+                  Назад
                 </button>
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="btn-primary"
-                  disabled={isSubmitting || images.length === 0}
                 >
-                  {isSubmitting ? (
-                    <span className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Saving changes...
-                    </span>
-                  ) : (
-                    'Save Changes'
-                  )}
+                  {isSubmitting ? 'Сохранение...' : 'Сохранить изменения'}
                 </button>
               </div>
             </div>
